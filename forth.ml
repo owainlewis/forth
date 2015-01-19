@@ -85,9 +85,12 @@ let lex input =
 (* Operations and FORTH built in functions *)
 
 let dump stack =
-  let token_strings = (List.map show_token !stack) |> List.rev in
-  let parts         = (String.concat " " token_strings) in
-  print_endline ( "[ " ^ parts ^ " ]" )
+  let token_strings = 
+     (List.map show_token !stack) 
+     |> List.rev in
+  let parts = 
+     (String.concat " " token_strings) 
+  in print_endline ( "[ " ^ parts ^ " ]" )
 
 (* Apply a simple math operation to integer types. Must make this polymorphic for floats
    etc *)
