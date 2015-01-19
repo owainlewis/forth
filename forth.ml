@@ -39,3 +39,7 @@ let run stack input =
                 add(stack)
               else Stack.push c stack) tokens
   in stack
+
+let repl input =
+  let stack = Stack.create() in
+  run stack input
