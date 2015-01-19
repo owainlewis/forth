@@ -6,7 +6,11 @@ I wanted to learn more about FORTH and given how little info there is online
 writing an interpreter seemed like a good way to learn something.
 
 ```ocaml
-# repl "5 DUMP 6 DUMP + DUMP 7 DUMP 8 DUMP + DUMP";;
+
+# Forth> "5 DUP +";;
+- : token list = [INT
+
+# Forth> "5 DUMP 6 DUMP + DUMP 7 DUMP 8 DUMP + DUMP";;
 [ 5 ]
 [ 6 5 ]
 [ 11 ]
