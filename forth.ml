@@ -88,7 +88,7 @@ let dump stack =
   let parts         = (String.concat " " token_strings) in
   print_endline ( "[ " ^ parts ^ " ]" )
 
-(* Apply a primative operation to integer types. Must make this polymorphic for floats
+(* Apply a simple math operation to integer types. Must make this polymorphic for floats
    etc *)
 let apply_prim_op op stack =
   let a = MStack.pop stack
