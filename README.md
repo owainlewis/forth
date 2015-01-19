@@ -8,7 +8,7 @@ writing an interpreter seemed like a good way to learn something.
 ```ocaml
 
 # Forth> "5 DUP +";;
-- : token list = [INT
+- : token list = [INT 10]
 
 # Forth> "5 DUMP 6 DUMP + DUMP 7 DUMP 8 DUMP + DUMP";;
 [ 5 ]
