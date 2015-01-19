@@ -76,8 +76,10 @@ let lex input =
   let rec aux lexed = function
       []      -> lexed
     | (x::xs) -> aux (lex_token x :: lexed) xs
-  in let lex_result = aux [] (tokenize input) in
-  List.rev lex_result
+  in 
+    let lex_result = 
+      aux [] (tokenize input) in
+    List.rev lex_result
 
 (* Operations and FORTH built in functions *)
 
