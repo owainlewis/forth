@@ -120,7 +120,8 @@ let run stack input =
                 | DIV   -> div(stack)
                 | DUMP  -> dump(stack)
                 | DUP   -> dup(stack)
-                | _     -> MStack.push stack c) tokens
+                | _     -> MStack.push stack c) 
+      tokens
   in stack
 
 let repl input =
