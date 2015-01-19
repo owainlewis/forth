@@ -19,8 +19,7 @@ module MStack = struct
     | x::xs -> Some(x)
 
   let push stack value : unit =
-    let current_stack = !stack in
-    stack := (value :: current_stack)
+    stack := (value :: !stack)
 
   let pop stack =
     match (!stack) with
@@ -62,6 +61,7 @@ let try_float token =
 
 let lex_token = function
   | "+"    -> ADD
+  | "-"    -> SUB
   | "*"    -> MULT
   | "/"    -> DIV
   | "DUMP" -> DUMP
@@ -76,8 +76,8 @@ let lex input =
   let rec aux lexed = function
       []      -> lexed
     | (x::xs) -> aux (lex_token x :: lexed) xs
-  in 
-    let lex_result = 
+  in
+    let lex_result =
       aux [] (tokenize input) in
     List.rev lex_result
 
@@ -88,13 +88,19 @@ let dump stack =
   let parts         = (String.concat " " token_strings) in
   print_endline ( "[ " ^ parts ^ " ]" )
 
-(* Apply the + function to our stack *)
-let add stack =
+(* Apply a primative operation to integer types. Must make this polymorphic for floats
+   etc *)
+let apply_prim_op op stack =
   let a = MStack.pop stack
   and b = MStack.pop stack in
   match (a,b) with
-  | (INT x, INT y) -> MStack.push stack (INT (x + y))
-  | _              -> raise (Failure "Incompatible types for addition operator")
+    | (INT x, INT y) -> MStack.push stack (INT (op x y))
+    | _              -> raise (Failure "Incompatible types for operator")
+
+let add stack  = apply_prim_op (fun x y -> x + y) stack
+and sub stack  = apply_prim_op (fun x y -> x - y) stack
+and mult stack = apply_prim_op (fun x y -> x * y) stack
+and div stack  = apply_prim_op (fun x y -> x / y) stack
 
 (* Duplicate the next item on the stack *)
 let dup stack =
@@ -108,10 +114,13 @@ let run stack input =
   let _ =
     List.iter
       (fun c -> match c with
-                | ADD  -> add(stack)
-                | DUMP -> dump(stack)
-                | DUP  -> dup(stack)
-                | _    -> MStack.push stack c) tokens
+                | ADD   -> add(stack)
+                | SUB   -> sub(stack)
+                | MULT  -> mult(stack)
+                | DIV   -> div(stack)
+                | DUMP  -> dump(stack)
+                | DUP   -> dup(stack)
+                | _     -> MStack.push stack c) tokens
   in stack
 
 let repl input =
