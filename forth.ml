@@ -6,6 +6,23 @@
 (*                                                                       *)
 (* --------------------------------------------------------------------- *)
 
+
+(* Custom range function *)
+let rng n =
+  let rec aux xs i =
+    if i <> n then
+      aux (xs @ [i]) (i+1)
+    else xs
+  in
+  if n < 0 then [] (* Negative range *)
+           else aux [] 0
+
+let range_iter f n =
+  List.iter f (rng n)
+
+let range_map f n =
+  List.map f (rng n)
+
 (* Custom stack instance of OCaml native Stack module
    to add debugging methods etc *)
 module MStack = struct
@@ -36,6 +53,7 @@ type token =
   | DIV
   | DUMP
   | DUP
+  | DOT
   | INT  of int
   | ATOM of string
 
@@ -47,6 +65,7 @@ let show_token = function
   | DIV    -> "/"
   | DUMP   -> "DUMP"
   | DUP    -> "DUP"
+  | DOT    -> "."
   | INT i  -> string_of_int i
   | ATOM s -> s
 
@@ -67,6 +86,7 @@ let lex_token = function
   | "/"    -> DIV
   | "DUMP" -> DUMP
   | "DUP"  -> DUP
+  | "."    -> DOT
   | x   -> match (try_int x) with
            | Some(i) -> INT i
            | None    -> ATOM x
@@ -85,11 +105,11 @@ let lex input =
 (* Operations and FORTH built in functions *)
 
 let dump stack =
-  let token_strings = 
-     (List.map show_token !stack) 
+  let token_strings =
+     (List.map show_token !stack)
      |> List.rev in
-  let parts = 
-     (String.concat " " token_strings) 
+  let parts =
+     (String.concat " " token_strings)
   in print_endline ( "[ " ^ parts ^ " ]" )
 
 (* Apply a simple math operation to integer types. Must make this polymorphic for floats
@@ -106,12 +126,24 @@ and sub stack  = apply_prim_op (fun x y -> x - y) stack
 and mult stack = apply_prim_op (fun x y -> x * y) stack
 and div stack  = apply_prim_op (fun x y -> x / y) stack
 
+let swap stack =
+  let a = MStack.pop stack
+  and b = MStack.pop stack in
+  List.iter (MStack.push stack) [b;a]
+
 (* Duplicate the next item on the stack *)
 let dup stack =
   let element = MStack.peek stack in
   match element with
   | Some(e) -> MStack.push stack e
   | None    -> ()
+
+let print_forth line = print_endline (line ^ "\nok.")
+
+(* Pop an item off the top of the stack and print it *)
+let dot stack =
+  let element = MStack.pop stack in
+  print_forth (show_token element)
 
 let run stack input =
   let tokens = lex input in
@@ -124,7 +156,8 @@ let run stack input =
                 | DIV   -> div(stack)
                 | DUMP  -> dump(stack)
                 | DUP   -> dup(stack)
-                | _     -> MStack.push stack c) 
+                | DOT   -> dot(stack)
+                | _     -> MStack.push stack c)
       tokens
   in stack
 
