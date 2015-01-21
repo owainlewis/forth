@@ -164,5 +164,5 @@ let run stack input =
 let repl input =
   let stack = MStack.empty() in
   let result = run stack input in
+  (* Eventually we just want to return void here *)
   !result
-  (* () *)
