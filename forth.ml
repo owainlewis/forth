@@ -41,7 +41,7 @@ module MStack = struct
 
   let pop stack =
     match (!stack) with
-    | [] -> raise (Failure "Empty stack")
+    | []    -> raise (Failure "Empty stack")
     | x::xs -> (stack := xs); x
 end
 
@@ -133,7 +133,8 @@ let swap stack =
 
 (* Duplicate the next item on the stack *)
 let dup stack =
-  let element = MStack.peek stack in
+  let element = MStack.peek stack 
+  in
   match element with
   | Some(e) -> MStack.push stack e
   | None    -> ()
