@@ -6,7 +6,6 @@
 (*                                                                       *)
 (* --------------------------------------------------------------------- *)
 
-
 (* Custom range function *)
 let rng n =
   let rec aux xs i =
@@ -17,11 +16,8 @@ let rng n =
   if n < 0 then [] (* Negative range *)
            else aux [] 0
 
-let range_iter f n =
-  List.iter f (rng n)
-
-let range_map f n =
-  List.map f (rng n)
+let range_iter f n = List.iter f (rng n)
+let range_map  f n = List.map f (rng n)
 
 (* Custom stack instance of OCaml native Stack module
    to add debugging methods etc *)
