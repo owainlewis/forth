@@ -1,23 +1,22 @@
 (* --------------------------------------------------------------------- *)
 (*                                                                       *)
-(* Forth.ml                                                              *)
+(* Forth.ml #load "str.cma"                                              *)
 (*                                                                       *)
 (* A micro compiler for a small subset of the FORTH programming language *)
 (*                                                                       *)
 (* --------------------------------------------------------------------- *)
 
-(* Custom range function *)
-let rng n =
-  let rec aux xs i =
-    if i <> n then
-      aux (xs @ [i]) (i+1)
-    else xs
-  in
-  if n < 0 then [] (* Negative range *)
-           else aux [] 0
+module Assoc = struct
 
-let range_iter f n = List.iter f (rng n)
-let range_map  f n = List.map f (rng n)
+    let procs = ref [ "ADD", "2 3 + DUP DUP DUP 2 * * *" ]
+
+    let insert k v =
+      let existing = !procs in
+      procs := (k, v) :: existing
+
+    let find p = List.assoc p !procs
+
+end
 
 (* Custom stack instance of OCaml native Stack module
    to add debugging methods etc *)
@@ -39,7 +38,28 @@ module MStack = struct
     match (!stack) with
     | []    -> raise (Failure "Empty stack")
     | x::xs -> (stack := xs); x
+
+  let inspect stack = !stack
 end
+
+(***********************************************)
+(* STACK OPS *)
+(***********************************************)
+
+let swap stack =
+  let a = MStack.pop stack
+  and b = MStack.pop stack in
+  let _ = List.iter (fun x -> MStack.push stack x) [ a; b ] in
+  !stack
+
+(* Duplicate the next item on the stack *)
+let dup stack =
+  let element = MStack.peek stack in
+  match element with
+  | Some(e) -> MStack.push stack e
+  | None    -> ()
+
+(***********************************************)
 
 (* FORTH operators *)
 type token =
@@ -122,19 +142,6 @@ and sub stack  = apply_prim_op (fun x y -> x - y) stack
 and mult stack = apply_prim_op (fun x y -> x * y) stack
 and div stack  = apply_prim_op (fun x y -> x / y) stack
 
-let swap stack =
-  let a = MStack.pop stack
-  and b = MStack.pop stack in
-  List.iter (MStack.push stack) [b;a]
-
-(* Duplicate the next item on the stack *)
-let dup stack =
-  let element = MStack.peek stack 
-  in
-  match element with
-  | Some(e) -> MStack.push stack e
-  | None    -> ()
-
 let print_forth line = print_endline (line ^ "\nok.")
 
 (* Pop an item off the top of the stack and print it *)
@@ -142,8 +149,8 @@ let dot stack =
   let element = MStack.pop stack in
   print_forth (show_token element)
 
-let run stack input =
-  let tokens = lex input in
+let run stack program =
+  let tokens = lex program in
   let _ =
     List.iter
       (fun c -> match c with
@@ -157,6 +164,14 @@ let run stack input =
                 | _     -> MStack.push stack c)
       tokens
   in stack
+
+(* RUN A PROCEDURE *)
+let run_proc stack name =
+    let procedure = Assoc.find name in
+    let _ = run stack procedure in
+    stack
+
+let go program = run (MStack.empty()) program
 
 let repl input =
   let stack = MStack.empty() in
