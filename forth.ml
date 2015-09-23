@@ -10,7 +10,7 @@ module Assoc = struct
 
     let insert k v =
       let existing = !procs in
-      procs := (k, v) :: existing
+        procs := (k, v) :: existing
 
     let find p = List.assoc p !procs
 end
