@@ -5,9 +5,7 @@
 (* A micro compiler for a small subset of the FORTH programming language *)
 (*                                                                       *)
 (* --------------------------------------------------------------------- *)
-
 module Assoc = struct
-
     let procs = ref [ "ADD", "2 3 + DUP DUP DUP 2 * * *" ]
 
     let insert k v =
@@ -15,13 +13,11 @@ module Assoc = struct
       procs := (k, v) :: existing
 
     let find p = List.assoc p !procs
-
 end
 
 (* Custom stack instance of OCaml native Stack module
    to add debugging methods etc *)
 module MStack = struct
-
   type 'a mstack = ('a list) ref
 
   let empty () = ref []
