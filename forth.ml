@@ -174,3 +174,17 @@ let repl input =
   let result = run stack input in
   (* Eventually we just want to return void here *)
   !result
+
+let main() =
+  let rec aux stack =
+    let input = read_line() in
+    let _ = run stack input in
+    let _ = dump stack in
+    aux stack		  
+  in
+      let stack = MStack.empty() in
+      let _ = print_endline "FORTH" in
+  aux stack
+
+let () = main()
+

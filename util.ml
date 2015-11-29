@@ -1,6 +1,6 @@
 (* Custom range function *)
 module Range = struct
-  let rng n =
+  let make n =
     let rec aux xs i =
       if i <> n then
         aux (xs @ [i]) (i+1)
@@ -9,5 +9,6 @@ module Range = struct
     if n < 0 then [] (* Negative range *)
              else aux [] 0
 
-  let map  f n = List.map f (rng n)
+  let map  f n = List.map f (make n)
 end
+		 
