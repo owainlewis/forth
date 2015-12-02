@@ -5,9 +5,12 @@
 (* A micro compiler for a small subset of the FORTH programming language *)
 (*                                                                       *)
 (* --------------------------------------------------------------------- *)
-module Assoc = struct
-    let procs = ref [ "ADD", "2 3 + DUP DUP DUP 2 * * *" ]
 
+open MutableStack
+
+(* Rename to Env *)
+module Assoc = struct  
+    let procs = ref [ ]
     let insert k v =
       let existing = !procs in
         procs := (k, v) :: existing
@@ -15,44 +18,23 @@ module Assoc = struct
     let find p = List.assoc p !procs
 end
 
-(* Custom stack instance of OCaml native Stack module
-   to add debugging methods etc *)
-module MStack = struct
-  type 'a mstack = ('a list) ref
-
-  let empty () = ref []
-
-  let peek stack =
-    match !stack with
-    | []    -> None
-    | x::xs -> Some(x)
-
-  let push stack value : unit =
-    stack := (value :: !stack)
-
-  let pop stack =
-    match (!stack) with
-    | []    -> raise (Failure "Empty stack")
-    | x::xs -> (stack := xs); x
-
-  let inspect stack = !stack
-end
-
 (***********************************************)
 (* STACK OPS *)
 (***********************************************)
 
+let init = MutableStack.empty
+
 let swap stack =
-  let a = MStack.pop stack
-  and b = MStack.pop stack in
-  let _ = List.iter (fun x -> MStack.push stack x) [ a; b ] in
+  let a = MutableStack.pop stack
+  and b = MutableStack.pop stack in
+  let _ = List.iter (fun x -> MutableStack.push stack x) [ a; b ] in
   !stack
 
 (* Duplicate the next item on the stack *)
 let dup stack =
-  let element = MStack.peek stack in
+  let element = MutableStack.peek stack in
   match element with
-  | Some(e) -> MStack.push stack e
+  | Some(e) -> MutableStack.push stack e
   | None    -> ()
 
 (***********************************************)
@@ -65,6 +47,7 @@ type token =
   | DIV
   | DUMP
   | DUP
+  | SWAP
   | DOT
   | INT  of int
   | ATOM of string
@@ -77,6 +60,7 @@ let show_token = function
   | DIV    -> "/"
   | DUMP   -> "DUMP"
   | DUP    -> "DUP"
+  | SWAP   -> "SWAP"		
   | DOT    -> "."
   | INT i  -> string_of_int i
   | ATOM s -> s
@@ -98,6 +82,7 @@ let lex_token = function
   | "/"    -> DIV
   | "DUMP" -> DUMP
   | "DUP"  -> DUP
+  | "SWAP" -> SWAP		
   | "."    -> DOT
   | x   -> match (try_int x) with
            | Some(i) -> INT i
@@ -124,14 +109,15 @@ let dump stack =
      (String.concat " " token_strings)
   in print_endline ( "[ " ^ parts ^ " ]" )
 
-(* Apply a simple math operation to integer types. Must make this polymorphic for floats
-   etc *)
+let pop2 stack =
+  let a = MutableStack.pop stack
+  and b = MutableStack.pop stack in
+  (a,b)
+		   
 let apply_prim_op op stack =
-  let a = MStack.pop stack
-  and b = MStack.pop stack in
-  match (a,b) with
-    | (INT x, INT y) -> MStack.push stack (INT (op x y))
-    | _              -> raise (Failure "Incompatible types for operator")
+  match (pop2 stack) with
+  | (INT x, INT y) -> MutableStack.push stack (INT (op x y))
+  | _              -> raise (Failure "Incompatible types for operation")
 
 let add stack  = apply_prim_op (fun x y -> x + y) stack
 and sub stack  = apply_prim_op (fun x y -> x - y) stack
@@ -142,7 +128,7 @@ let print_forth line = print_endline (line ^ "\nok.")
 
 (* Pop an item off the top of the stack and print it *)
 let dot stack =
-  let element = MStack.pop stack in
+  let element = MutableStack.pop stack in
   print_forth (show_token element)
 
 let run stack program =
@@ -157,7 +143,7 @@ let run stack program =
                 | DUMP  -> dump(stack)
                 | DUP   -> dup(stack)
                 | DOT   -> dot(stack)
-                | _     -> MStack.push stack c)
+                | _     -> MutableStack.push stack c)
       tokens
   in stack
 
@@ -167,24 +153,5 @@ let run_proc stack name =
     let _ = run stack procedure in
     stack
 
-let go program = run (MStack.empty()) program
-
-let repl input =
-  let stack = MStack.empty() in
-  let result = run stack input in
-  (* Eventually we just want to return void here *)
-  !result
-
-let main() =
-  let rec aux stack =
-    let input = read_line() in
-    let _ = run stack input in
-    let _ = dump stack in
-    aux stack		  
-  in
-      let stack = MStack.empty() in
-      let _ = print_endline "FORTH" in
-  aux stack
-
-let () = main()
+let go program = run (MutableStack.empty()) program
 
