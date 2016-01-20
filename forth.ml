@@ -7,9 +7,6 @@
 (*                                                                       *)
 (* --------------------------------------------------------------------- *)
 
-(*****************************************************************)
-(* A global environment. This is essentially a dict for words *)
-(*****************************************************************)
 module Env = struct  
   let env = ref [ ]
   let insert k v =
@@ -18,14 +15,9 @@ module Env = struct
   let find p = List.assoc p !env
 end
 
-(*****************************************************************)
-(* Stack implementation *)
-(*****************************************************************)
-
 exception UnderflowException of string
 			
 module Stack = struct
-  
   type 'a stack = 'a list ref		     
   (* Create an empty stack *)			    
   let empty () = ref []		     
@@ -73,8 +65,6 @@ let drop stack =
 								 
 let over stack = stack
 let rot stack = stack
-  
-(*****************************************************************)	       
 
 (* FORTH operators *)
 type token =
@@ -136,8 +126,6 @@ let lex input =
       aux [] (tokenize input) in
     List.rev lex_result
 
-(* Operations and FORTH built in functions *)
-
 let dump stack =
   let token_strings =
      (List.map show_token !stack)
@@ -163,7 +151,6 @@ and div stack  = apply_prim_op (fun x y -> x / y) stack
 
 let print_forth line = print_endline (line ^ "\nok.")
 
-(* Pop an item off the top of the stack and print it *)
 let dot stack =
   let element = Stack.pop stack in
   print_forth (show_token element)
@@ -184,11 +171,9 @@ let run stack program =
       tokens
   in stack
 
-(* RUN A PROCEDURE *)
 let run_proc stack name =
     let procedure = Env.find name in
     let _ = run stack procedure in
     stack
 
 let go program = run (Stack.empty()) program
-
