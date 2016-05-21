@@ -6,13 +6,18 @@
 (*                                                                       *)
 (* --------------------------------------------------------------------- *)
 
-module Env = struct
-  let env = ref [ ]
-  let insert k v =
-    let existing_env = !env in
-    env := (k, v) :: existing_env
-  let find p = List.assoc p !env
-end
+open Printf
+
+(* module Env = struct *)
+(*   let env = ref [ ] *)
+(*   let insert k v = *)
+(*     let existing_env = !env in *)
+(*     env := (k, v) :: existing_env *)
+(*   let find p = *)
+(*     try *)
+(*       let v = List.assoc p !env in Some(v) *)
+(*     with Not_found -> None *)
+(* end *)
 
 exception UnderflowException of string
 
@@ -39,7 +44,7 @@ module Stack = struct
 end
 
 (*****************************************************************)
-(* STACK OPS *)
+(* Lexing + AST                                                  *)
 (*****************************************************************)
 
 (* FORTH operators *)
@@ -88,6 +93,10 @@ let dump stack =
      (String.concat " " token_strings)
   in print_endline ( "[ " ^ parts ^ " ]" )
 
+(*****************************************************************)
+(* Base                                                          *)
+(*****************************************************************)
+
 let apply_prim_op op stack =
   let a = Stack.pop stack in
   let b = Stack.pop stack
@@ -101,10 +110,24 @@ and sub stack  = apply_prim_op (fun x y -> x - y) stack
 and mult stack = apply_prim_op (fun x y -> x * y) stack
 and div stack  = apply_prim_op (fun x y -> x / y) stack
 
+let swap (stack : 'a list ref) =
+  let a = Stack.pop stack
+  and b = Stack.pop stack in
+  List.iter (Stack.push stack) [ a; b ];
+  !stack
+
+let dup stack = match (Stack.peek stack) with
+               | Some(e) -> Stack.push stack e
+               | None    -> ()
+
 let dot stack =
   let print_forth line = print_endline (line ^ "\nok.") in
   let element = Stack.pop stack in
   print_forth (show_token element)
+
+(*****************************************************************)
+(* Eval                                                          *)
+(*****************************************************************)
 
 let eval stack program =
   let rec aux stack program =
@@ -114,17 +137,18 @@ let eval stack program =
         match x with
           (* Just push integers onto the stack *)
           | Int n -> Stack.push stack (Int n); aux stack xs
+          | String s -> Stack.push stack (String s); aux stack xs
           | Word w -> match w with
                       | "+" -> add stack; aux stack xs
                       | "*" -> mult stack; aux stack xs
                       | "-" -> sub stack; aux stack xs
                       | "/" -> div stack; aux stack xs
+                      | "dup" -> dup stack; aux stack xs
+                      | "swap" -> swap stack; aux stack xs
+                      | "." -> dot stack; aux stack xs
                       | _ -> aux stack xs
           | _ -> aux stack xs
   in aux stack program
-
-(** Example program *)
-let example = eval (Stack.empty()) [Int 2; Int 2; Word "*"; Int 4; Word "-"]
 
 let parse program =
   let tokens = lex program in
@@ -136,9 +160,26 @@ let parse program =
       tokens
   in List.rev (Stack.inspect stack)
 
-let run_proc stack name =
-    let procedure = Env.find name in
-    let _ = run stack procedure in
-    stack
+let go stack program = eval stack (parse program)
 
-let go program = eval (Stack.empty()) (parse program)
+(* Main *)
+
+let spacer = print_endline "---------------------------------------"
+
+let repl stack =
+  let out = Printf.printf "%s\n" in
+  try
+    while true do
+      let line = input_line stdin in
+      spacer;
+      go stack line;
+      spacer;
+      out line
+    done;
+  with UnderflowException e -> ()
+
+let () =
+  spacer;
+  print_endline "<< FORTH: A simple forth interpreter >>";
+  spacer;
+  repl (Stack.empty())
