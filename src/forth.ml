@@ -6,35 +6,35 @@
 (*                                                                       *)
 (* --------------------------------------------------------------------- *)
 
-module Env = struct  
+module Env = struct
   let env = ref [ ]
   let insert k v =
     let existing_env = !env in
-    env := (k, v) :: existing_env				   
+    env := (k, v) :: existing_env
   let find p = List.assoc p !env
 end
 
 exception UnderflowException of string
-			
+
 module Stack = struct
-  type 'a stack = 'a list ref		     
-  (* Create an empty stack *)			    
-  let empty () = ref []		     
+  type 'a stack = 'a list ref
+  (* Create an empty stack *)
+  let empty () = ref []
   (* Peek the top of the stack *)
   let peek stack = match !stack with
   | [] -> None
-  | x::_ -> Some(x)		  
-  (* Push an item onto the stack *)		  
+  | x :: _ -> Some(x)
+  (* Push an item onto the stack *)
   let push stack value =
     let new_stack = (value :: !stack) in
-    stack := new_stack	       
-  (* Pop an item off the stack. Unsafe *)	       
+    stack := new_stack
+  (* Pop an item off the stack. Unsafe *)
   let pop stack = match (!stack) with
   | []    -> raise (UnderflowException "Stack underflow")
-  | x::xs -> let _ = stack := xs in x
-  (* Initialize the stack with some values *)					
-  let init_with xs = ref xs		   
-  (* Dump the results of the stack for inspection *)					 
+  | x :: xs -> let _ = stack := xs in x
+  (* Initialize the stack with some values *)
+  let init_with xs = ref xs
+  (* Dump the results of the stack for inspection *)
   let inspect stack = !stack
 end
 
@@ -42,54 +42,17 @@ end
 (* STACK OPS *)
 (*****************************************************************)
 
-(* Swap the top two elements on the stack *)		 
-let swap (stack : 'a list ref) =
-  let a = Stack.pop stack
-  and b = Stack.pop stack 
-  and f = Stack.push stack in 
-  let _ = List.iter f [ a; b ] in
-  !stack
-(* Duplicate the next item on the stack *)
-let dup stack =
-  let element = Stack.peek stack in
-  match element with
-  | Some(e) -> Stack.push stack e
-  | None    -> ()
-(* Drop an item from the stack *)
-let drop stack =
-  let drop_head = function
-    | [] -> []
-    | x::xs -> xs	      
-  in let updated = List.rev (drop_head (List.rev !stack)) in ref updated
-								 
-let over stack = stack
-let rot stack = stack
-
 (* FORTH operators *)
 type token =
-    ADD
-  | SUB
-  | MULT
-  | DIV
-  | DUMP
-  | DUP
-  | SWAP
-  | DOT
-  | INT  of int
-  | ATOM of string
+  | Int  of int
+  | String of string
+  | Word of string
 
 (* Show a token *)
 let show_token = function
-    ADD    -> "+"
-  | SUB    -> "-"
-  | MULT   -> "*"
-  | DIV    -> "/"
-  | DUMP   -> "DUMP"
-  | DUP    -> "DUP"
-  | SWAP   -> "SWAP"		
-  | DOT    -> "."
-  | INT i  -> string_of_int i
-  | ATOM s -> s
+  | Int i  -> string_of_int i
+  | String x -> x
+  | Word s -> s
 
 let try_int token =
   try
@@ -102,17 +65,9 @@ let try_float token =
   with _ -> None
 
 let lex_token = function
-  | "+"    -> ADD
-  | "-"    -> SUB
-  | "*"    -> MULT
-  | "/"    -> DIV
-  | "DUMP" -> DUMP
-  | "DUP"  -> DUP
-  | "SWAP" -> SWAP		
-  | "."    -> DOT
   | x   -> match (try_int x) with
-           | Some(i) -> INT i
-           | None    -> ATOM x
+           | Some(i) -> Int i
+           | None    -> Word x
 
 (* Lex the input into actionable tokens *)
 let lex input =
@@ -133,14 +88,12 @@ let dump stack =
      (String.concat " " token_strings)
   in print_endline ( "[ " ^ parts ^ " ]" )
 
-let pop2 stack =
-  let a = Stack.pop stack
-  and b = Stack.pop stack in
-  (a,b)
-		   
 let apply_prim_op op stack =
-  match (pop2 stack) with
-  | (INT x, INT y) -> Stack.push stack (INT (op x y))
+  let a = Stack.pop stack in
+  let b = Stack.pop stack
+  in
+  match ((a,b)) with
+  | (Int x, Int y) -> Stack.push stack (Int (op x y))
   | _              -> raise (Failure "Incompatible types for operation")
 
 let add stack  = apply_prim_op (fun x y -> x + y) stack
@@ -148,31 +101,44 @@ and sub stack  = apply_prim_op (fun x y -> x - y) stack
 and mult stack = apply_prim_op (fun x y -> x * y) stack
 and div stack  = apply_prim_op (fun x y -> x / y) stack
 
-let print_forth line = print_endline (line ^ "\nok.")
-
 let dot stack =
+  let print_forth line = print_endline (line ^ "\nok.") in
   let element = Stack.pop stack in
   print_forth (show_token element)
 
-let run stack program =
+let eval stack program =
+  let rec aux stack program =
+    match program with
+      | [] -> stack
+      | (x :: xs) ->
+        match x with
+          (* Just push integers onto the stack *)
+          | Int n -> Stack.push stack (Int n); aux stack xs
+          | Word w -> match w with
+                      | "+" -> add stack; aux stack xs
+                      | "*" -> mult stack; aux stack xs
+                      | "-" -> sub stack; aux stack xs
+                      | "/" -> div stack; aux stack xs
+                      | _ -> aux stack xs
+          | _ -> aux stack xs
+  in aux stack program
+
+(** Example program *)
+let example = eval (Stack.empty()) [Int 2; Int 2; Word "*"; Int 4; Word "-"]
+
+let parse program =
   let tokens = lex program in
+  let stack = Stack.empty() in
   let _ =
     List.iter
       (fun c -> match c with
-                | ADD   -> add(stack)
-                | SUB   -> sub(stack)
-                | MULT  -> mult(stack)
-                | DIV   -> div(stack)
-                | DUMP  -> dump(stack)
-                | DUP   -> dup(stack)
-                | DOT   -> dot(stack)
-                | _     -> Stack.push stack c)
+               | _     -> Stack.push stack c)
       tokens
-  in stack
+  in List.rev (Stack.inspect stack)
 
 let run_proc stack name =
     let procedure = Env.find name in
     let _ = run stack procedure in
     stack
 
-let go program = run (Stack.empty()) program
+let go program = eval (Stack.empty()) (parse program)
