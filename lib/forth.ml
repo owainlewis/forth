@@ -140,9 +140,10 @@ let eval stack program =
                       | "*" -> mult stack; aux stack xs
                       | "-" -> sub stack; aux stack xs
                       | "/" -> div stack; aux stack xs
-                      | "dup" -> dup stack; aux stack xs
-                      | "swap" -> swap stack; aux stack xs
+                      | "DUP" -> dup stack; aux stack xs
+                      | "SWAP" -> swap stack; aux stack xs
                       | "." -> dot stack; aux stack xs
+                      | "DUMP" -> dump stack; aux stack xs
           | _ -> aux stack xs
   in aux stack program
 

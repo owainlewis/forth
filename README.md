@@ -5,6 +5,18 @@ A micro compiler for the FORTH programming language
 I wanted to learn more about FORTH and given how little info there is online
 writing an interpreter seemed like a good way to learn something.
 
+## Quick start 
+
+```
+➜  forth git:(master) ✗ dune exec bin/main.exe                 
+---------------------------------------
+<< FORTH >>
+10 DUP DUP + DUMP
+[ 10 20 ]
+```
+
+Example
+
 ```ocaml
 
 # Forth> "5 DUP +";;
