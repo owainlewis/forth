@@ -3,10 +3,8 @@
 (* Forth.ml #load "str.cma"                                              *)
 (*                                                                       *)
 (* A micro compiler for a small subset of the FORTH programming language *)
-(*                                                                       *)
+(* Author: Owain Lewis <owain@owainlewis.com>                            *)
 (* --------------------------------------------------------------------- *)
-
-open Printf
 
 (* module Env = struct *)
 (*   let env = ref [ ] *)
@@ -113,8 +111,7 @@ and div stack  = apply_prim_op (fun x y -> x / y) stack
 let swap (stack : 'a list ref) =
   let a = Stack.pop stack
   and b = Stack.pop stack in
-  List.iter (Stack.push stack) [ a; b ];
-  !stack
+  List.iter (Stack.push stack) [ a; b ]
 
 let dup stack = match (Stack.peek stack) with
                | Some(e) -> Stack.push stack e
@@ -146,7 +143,6 @@ let eval stack program =
                       | "dup" -> dup stack; aux stack xs
                       | "swap" -> swap stack; aux stack xs
                       | "." -> dot stack; aux stack xs
-                      | _ -> aux stack xs
           | _ -> aux stack xs
   in aux stack program
 
@@ -160,26 +156,3 @@ let parse program =
       tokens
   in List.rev (Stack.inspect stack)
 
-let go stack program = eval stack (parse program)
-
-(* Main *)
-
-let spacer = print_endline "---------------------------------------"
-
-let repl stack =
-  let out = Printf.printf "%s\n" in
-  try
-    while true do
-      let line = input_line stdin in
-      spacer;
-      go stack line;
-      spacer;
-      out line
-    done;
-  with UnderflowException e -> ()
-
-let () =
-  spacer;
-  print_endline "<< FORTH: A simple forth interpreter >>";
-  spacer;
-  repl (Stack.empty())
